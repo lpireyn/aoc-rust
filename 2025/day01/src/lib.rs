@@ -9,15 +9,26 @@ use std::str::FromStr;
 pub struct Dial {
     size: u8,
     pointed: u8,
+    /// *Pointed-at-zero* count.
+    paz_count: u16,
 }
 
 impl Dial {
     pub fn new(size: u8, pointed: u8) -> Self {
-        Self { size, pointed }
+        Self {
+            size,
+            pointed,
+            // We don't count a dial initially pointed at 0
+            paz_count: 0,
+        }
     }
 
     pub fn pointed(&self) -> u8 {
         self.pointed
+    }
+
+    pub fn paz_count(&self) -> u16 {
+        self.paz_count
     }
 
     pub fn turn(&mut self, spec: &TurnSpec) {
@@ -25,13 +36,22 @@ impl Dial {
         let pointed = self.pointed as i32;
         let TurnSpec(dir, clicks) = spec;
         let clicks = *clicks as i32;
-        self.pointed = match dir {
-            Direction::Left => {
-                let m = (pointed - clicks) % size;
-                if m < 0 { size + m } else { m }
+        let p = match dir {
+            Direction::Left => pointed - clicks,
+            Direction::Right => pointed + clicks,
+        };
+        let d = p / size;
+        let m = p % size;
+        if p > 0 {
+            self.pointed = m as u8;
+            self.paz_count += d as u16;
+        } else {
+            self.pointed = if m < 0 { size + m } else { 0 } as u8;
+            self.paz_count += -d as u16;
+            if pointed > 0 {
+                self.paz_count += 1;
             }
-            Direction::Right => (pointed + clicks) % size,
-        } as u8;
+        }
     }
 }
 
@@ -93,5 +113,15 @@ mod tests {
             }
         }
         assert_eq!(count, 3);
+    }
+
+    #[test]
+    fn test_pointed_count() {
+        let mut dial = Dial::new(100, 50);
+        let specs = TurnSpec::read_from_file(&File::open("example.txt").unwrap());
+        for spec in &specs {
+            dial.turn(spec);
+        }
+        assert_eq!(dial.paz_count(), 6);
     }
 }
