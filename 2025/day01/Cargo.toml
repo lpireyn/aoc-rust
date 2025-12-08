@@ -1,0 +1,12 @@
+[package]
+name = "day01"
+version = "0.1.0"
+authors.workspace = true
+description = "Advent of Code 2025, day 1"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "part1"
+path = "src/part1.rs"
