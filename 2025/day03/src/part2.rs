@@ -1,4 +1,4 @@
-//! Advent of Code 2025, day 3, part 1
+//! Advent of Code 2025, day 3, part 2
 
 use std::fs::File;
 
@@ -11,7 +11,7 @@ fn main() {
 
 fn solve() -> u64 {
     let banks = Bank::read_from_file(&File::open("input.txt").unwrap());
-    banks.iter().map(|bank| bank.max_joltage(2)).sum()
+    banks.iter().map(|bank| bank.max_joltage(12)).sum()
 }
 
 #[cfg(test)]
@@ -20,6 +20,6 @@ mod tests {
 
     #[test]
     fn test_solution() {
-        assert_eq!(solve(), 17100);
+        assert_eq!(solve(), 170418192256861);
     }
 }

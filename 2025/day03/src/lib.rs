@@ -22,35 +22,33 @@ impl Bank {
             .collect()
     }
 
-    pub fn max_joltage(&self) -> u8 {
+    pub fn max_joltage(&self, n: usize) -> u64 {
         let batteries = &self.0;
-        // The first battery is the first one with the largest joltage, excl. the last one
-        // Unfortunately, the various `max` methods of the `Iterator` trait return the last item found,
-        // so we need to do it ourselves
         let len = batteries.len();
-        let mut max_joltage = 0u8;
-        let mut max_index = 0usize;
-        for (i, battery) in batteries.iter().enumerate().take(len - 1) {
-            let joltage = battery.0;
-            if joltage > max_joltage {
-                max_joltage = joltage;
-                max_index = i;
+        let mut total_joltage = 0u64;
+        let mut first_index = 0usize;
+        let mut last_index = len - (n - 1);
+        for _ in 0..n {
+            let mut max_joltage = 0u8;
+            let mut max_index = 0usize;
+            for (i, battery) in batteries
+                .iter()
+                .enumerate()
+                .skip_while(|(index, _)| *index < first_index)
+                .take_while(|(index, _)| *index < last_index)
+            {
+                let joltage = battery.0;
+                if joltage > max_joltage {
+                    max_joltage = joltage;
+                    max_index = i;
+                }
             }
+            assert!(max_joltage > 0);
+            total_joltage = total_joltage * 10 + max_joltage as u64;
+            first_index = max_index + 1;
+            last_index += 1;
         }
-        assert!(max_joltage > 0);
-        let first = max_joltage;
-        // The second battery is the following one with the largest joltage
-        max_joltage = 0;
-        for battery in batteries.iter().skip(max_index + 1) {
-            let joltage = battery.0;
-            if joltage > max_joltage {
-                max_joltage = joltage;
-                // We don't need `max_index` this time
-            }
-        }
-        assert!(max_joltage > 0);
-        let second = max_joltage;
-        first * 10 + second
+        total_joltage
     }
 }
 
@@ -68,13 +66,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_example() {
-        assert_eq!(Bank::from_str("987654321111111").unwrap().max_joltage(), 98);
-        assert_eq!(Bank::from_str("811111111111119").unwrap().max_joltage(), 89);
-        assert_eq!(Bank::from_str("234234234234278").unwrap().max_joltage(), 78);
-        assert_eq!(Bank::from_str("818181911112111").unwrap().max_joltage(), 92);
+    #[rustfmt::skip]
+    fn test_example_n2() {
+        assert_eq!(Bank::from_str("987654321111111").unwrap().max_joltage(2), 98);
+        assert_eq!(Bank::from_str("811111111111119").unwrap().max_joltage(2), 89);
+        assert_eq!(Bank::from_str("234234234234278").unwrap().max_joltage(2), 78);
+        assert_eq!(Bank::from_str("818181911112111").unwrap().max_joltage(2), 92);
         let banks = Bank::read_from_file(&File::open("example.txt").unwrap());
-        let max_joltage: u16 = banks.iter().map(|bank| bank.max_joltage() as u16).sum();
+        let max_joltage: u16 = banks.iter().map(|bank| bank.max_joltage(2) as u16).sum();
         assert_eq!(max_joltage, 357);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_example_n12() {
+        assert_eq!(Bank::from_str("987654321111111").unwrap().max_joltage(12), 987654321111);
+        assert_eq!(Bank::from_str("811111111111119").unwrap().max_joltage(12), 811111111119);
+        assert_eq!(Bank::from_str("234234234234278").unwrap().max_joltage(12), 434234234278);
+        assert_eq!(Bank::from_str("818181911112111").unwrap().max_joltage(12), 888911112111);
+        let banks = Bank::read_from_file(&File::open("example.txt").unwrap());
+        let max_joltage: u64 = banks.iter().map(|bank| bank.max_joltage(12)).sum();
+        assert_eq!(max_joltage, 3121910778619);
     }
 }
