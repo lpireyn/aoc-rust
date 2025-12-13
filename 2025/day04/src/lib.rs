@@ -5,7 +5,7 @@ use std::io::BufReader;
 use std::io::Read;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Grid {
     width: usize,
     cells: Vec<bool>,
@@ -28,6 +28,10 @@ impl Grid {
 
     pub fn cell(&self, x: usize, y: usize) -> bool {
         self.cells[y * self.width + x]
+    }
+
+    pub fn cell_mut(&mut self, x: usize, y: usize) -> &mut bool {
+        &mut self.cells[y * self.width + x]
     }
 
     pub fn adjacent_count(&self, x: usize, y: usize) -> usize {
@@ -61,6 +65,29 @@ impl Grid {
             }
         }
         count
+    }
+
+    pub fn removable_count(&self, max_adjacent_count: usize) -> usize {
+        let mut total_count = 0usize;
+        let mut grid: Box<Grid> = Box::new(self.clone());
+        loop {
+            let mut new_grid: Box<Grid> = Box::new(grid.as_ref().clone());
+            let mut count = 0usize;
+            for y in 0..grid.height() {
+                for x in 0..grid.width {
+                    if grid.cell(x, y) && grid.adjacent_count(x, y) < max_adjacent_count {
+                        *new_grid.cell_mut(x, y) = false;
+                        count += 1;
+                    }
+                }
+            }
+            if count == 0 {
+                break;
+            }
+            total_count += count;
+            grid = new_grid;
+        }
+        total_count
     }
 }
 
@@ -99,8 +126,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_example() {
+    fn test_example_accessible_count() {
         let grid = Grid::read_from_file(&File::open("example.txt").unwrap());
         assert_eq!(grid.accessible_count(4), 13);
+    }
+
+    #[test]
+    fn test_example_removable_count() {
+        let grid = Grid::read_from_file(&File::open("example.txt").unwrap());
+        assert_eq!(grid.removable_count(4), 43);
     }
 }
