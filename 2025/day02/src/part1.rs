@@ -13,7 +13,7 @@ fn solve() -> u64 {
     let id_ranges = IdRange::read_from_file(&File::open("input.txt").unwrap());
     id_ranges
         .iter()
-        .map(|id_range| id_range.invalid_ids_sum())
+        .map(|id_range| id_range.invalid_ids_sum_part1())
         .sum()
 }
 
